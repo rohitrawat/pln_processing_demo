@@ -60,6 +60,39 @@ double** mallocMatrix(int rows, int cols) {
     return ptr;
 }
 
+void freeArray(double *ptr) {
+    if(ptr == NULL) {
+        printf("Free on null pointer.\n\n");
+        exit(0);
+    }
+    free(ptr);
+}
+
+void freeMatrix(double **ptr, int rows) {
+    int r;
+    if(ptr == NULL) {
+        printf("Free on null pointer.\n\n");
+        exit(0);
+    }
+    for(r=0; r<rows; r++) {
+        freeArray(ptr[r]);
+    }
+    free(ptr);
+}
+
+void freeMatrix3(double ***ptr, int rows, int cols) {
+    int r;
+    if(ptr == NULL) {
+        printf("Free on null pointer.\n\n");
+        exit(0);
+    }
+    for(r=0; r<rows; r++) {
+        freeMatrix(ptr[r], cols);
+    }
+    free(ptr);
+}
+
+
 // Uncomment to print debugging messages:
 //#define DEBUG_PRINT
 
@@ -206,6 +239,25 @@ void readPlnWeights(char *fname, struct PlnWeights *pln) {
         fclose(fp);
 }
 
+void destroyPlnWeights(struct PlnWeights *pln) {
+    freeArray(pln->inputMeans);
+    freeArray(pln->inputStd);
+    
+    /* cluster centers and distance measure */
+    freeArray(pln->distanceMeasure);
+    freeMatrix(pln->clusterCenters, pln->Nc);
+    
+    /* cluster weights */
+    freeMatrix3(pln->W, pln->Nc, pln->M);
+
+    /* Unused entries which can be left uninitialized */    
+    freeArray((double*)pln->Nv); /* samples in each cluster */
+    freeMatrix3(pln->R, pln->Nc, pln->N+1);
+    freeMatrix3(pln->C, pln->Nc, pln->M);
+    freeMatrix(pln->Et, pln->Nc); /* variance of outputs */
+    freeArray(pln->lambda); /* regularization parameter */
+}
+
 /* pre process an input vector */
 void preProcess(double *in, const struct PlnWeights *pln, double *out) {
     int n=0;
@@ -260,6 +312,8 @@ void get_PLN_output(double *x_in, const struct PlnWeights *pln, double *PDA, dou
     }
     *PDA = y[0];
     *OSW = y[1];
+    free(x);
+    free(y);
 }
 
 /* Demo main program */
@@ -309,4 +363,7 @@ Selected columns for file 2:
     get_PLN_output(x2, &pln2, &post_PDA, &post_OSW);
     printf("post_PDA = %lf\n", post_PDA);
     printf("post_OSW = %lf\n", post_OSW);
+    
+    destroyPlnWeights(&pln1);
+    destroyPlnWeights(&pln2);
 }
