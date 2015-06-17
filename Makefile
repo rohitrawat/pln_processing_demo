@@ -1,4 +1,4 @@
-all: hello-c-world
+all: pln_processing pln_processing_nofiles
 
 %: %.c
 	gcc -g $< -o $@
