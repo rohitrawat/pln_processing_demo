@@ -34,6 +34,9 @@ struct PlnWeights {
     double *lambda; /* regularization parameter */
 };
 
+#include "pln1_weights.c"
+#include "pln2_weights.c"
+
 /* array creation */
 double* mallocArray(int size) {
     double *ptr = NULL;
@@ -104,8 +107,9 @@ void freeMatrix3(double ***ptr, int rows, int cols) {
 #define dprintf(FMT, ARG) //printf(FMT, ARG)
 #endif
 
+
 /* read PLN weights text file. 
-Instead of reading from text file, the values can be directly coded into the structure */
+Instead of reading from text file, the values can be directly coded into the structure 
 void readPlnWeights(char *fname, struct PlnWeights *pln) {
         int cnt = 0;
         int n, m, k;
@@ -237,7 +241,7 @@ void readPlnWeights(char *fname, struct PlnWeights *pln) {
         cnt = fscanf(fp, "EOF\n");
         
         fclose(fp);
-}
+}*/
 
 void destroyPlnWeights(struct PlnWeights *pln) {
     freeArray(pln->inputMeans);
@@ -263,6 +267,7 @@ void preProcess(double *in, const struct PlnWeights *pln, double *out) {
     int n=0;
     for(n=0; n<pln->N; n++) {
         out[n] = (in[n]-pln->inputMeans[n])/pln->inputStd[n];
+        //printf("%f, %f\n", pln->inputMeans[n], pln->inputStd[n]);
     }
 }
 
@@ -281,6 +286,7 @@ int get_PLN_cluster_membership(double *x, const struct PlnWeights *pln) {
         d = 0;
         for(n=0; n<pln->N; n++) {
             d += abs(x[n] - pln->clusterCenters[k][n]);
+            //printf("%f\n", pln->clusterCenters[k][n]);
         }
         if(d<dmin) {
             dmin = d;
@@ -306,9 +312,12 @@ void get_PLN_output(double *x_in, const struct PlnWeights *pln, double *PDA, dou
     for(m=0; m<pln->M; m++) {
         dprintf("m=%d\n", m);
         y[m] = pln->W[k][m][0];
+        //printf("%f, ", pln->W[k][m][0]);
         for(n=1; n<pln->N+1; n++) {
             y[m] += x[n-1]*pln->W[k][m][n];
+            //printf("%f, ", pln->W[k][m][n]);
         }
+        //printf("\n");
     }
     *PDA = y[0];
     *OSW = y[1];
@@ -319,10 +328,12 @@ void get_PLN_output(double *x_in, const struct PlnWeights *pln, double *PDA, dou
 /* Demo main program */
 main() {
     struct PlnWeights pln1;
-    readPlnWeights("data/file1_pln_weights.txt", &pln1);
+    init_memory_pln1(&pln1);
+    load_values_pln1(&pln1);
 
     struct PlnWeights pln2;
-    readPlnWeights("data/file2_pln_weights.txt", &pln2);
+    init_memory_pln2(&pln2);
+    load_values_pln2(&pln2);
 
 /*
 Selected columns for file 1:
@@ -343,7 +354,7 @@ Selected columns for file 1:
     printf("mid_PDA = %lf\n", mid_PDA);
     printf("mid_OSW = %lf\n", mid_OSW);
 
-    
+//    exit(0);
 
 /*
 Selected columns for file 2:
@@ -364,6 +375,6 @@ Selected columns for file 2:
     printf("post_PDA = %lf\n", post_PDA);
     printf("post_OSW = %lf\n", post_OSW);
     
-    destroyPlnWeights(&pln1);
-    destroyPlnWeights(&pln2);
+    free_memory_pln1(&pln1);
+    free_memory_pln2(&pln2);
 }
